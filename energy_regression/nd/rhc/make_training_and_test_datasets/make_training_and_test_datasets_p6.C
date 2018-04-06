@@ -128,7 +128,7 @@ void make_training_and_test_datasets_p6(int stride = 100000, int offset = 0)
   string dataset = "defname: prod_caf_R17-11-14-prod4reco.e_nd_genie_nonswap_rhc_nova_v08_epoch6a_v1 with stride "+to_string(stride)+" offset "+to_string(offset);
   /// print with number of tracks info
   MakeTextListFile(dataset, {kNumuCutND2018}, {"nd_p6_standard_numucc_selection_stride"+to_string(stride)+"_offset"+to_string(offset)+".txt"},
-                   {&kRun, &kSubRun, &kCycle, &kEvt, &kSlice, &kIsNumuCCVar, &kTrueE, &kTrueMuonE, &kMuE, &kTrkLenAct, &kTrkLenCat, &kMuStopZ, &kTrueHadE, &kHadE, &kHadAll, &kRecoQ2, &kNPng, &kReMIdTrkIsMuon, &kCVNFSElectronScore, &kCVNFSMuonScore, &kCVNFSPi0Score, &kCVNFSChargedPionScore, &kCVNFSNeutronScore, &kCVNFSProtonScore2018, &kMyWeight, &kMode},
+                   {&kRun, &kSubRun, &kCycle, &kEvt, &kSlice, &kIsNumuCCVar, &kTrueE, &kTrueMuonE, &kMuE, &kTrkLenAct, &kTrkLenCat, &kMuStopZ, &kTrueHadE, &kHadE, &kHadAll, &kRecoQ2, &kNPng, &kReMIdTrkIsMuon, &kCVNFSElectronScore, &kCVNFSMuonScore, &kCVNFSPi0Score, &kCVNFSChargedPionScore, &kCVNFSNeutronScore, &kCVNFSProtonScore2018, &kMyWeight, &kMode, &kTruePDG},
                    &kStandardSpillCuts);
 }
 #endif
