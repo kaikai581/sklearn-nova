@@ -24,11 +24,11 @@ ax.scatter(xs, zs, color='green')
 # Generated linear fit
 slope, intercept, r_value, p_value, std_err = stats.linregress(xs,zs)
 line = slope*xs + intercept
-plt.plot(xs,zs,'o', xs, line)
+plt.plot(xs, line)
 ax.set_xlabel('x')
 ax.set_ylabel('z')
 ax.set_title('low dimensional projection')
-ax.text(1,4,r'$g(x)={:3.2f}x+{:3.2f}$'.format(slope, intercept))
+ax.text(1,4,r'$g(x)={:3.2f}x+{:3.2f}$'.format(slope, intercept), color='red', fontsize=12)
 
 ax2 = fig.add_subplot(1,2,2)
 dd = (line-zs)/zs
@@ -37,4 +37,5 @@ ax2.set_xlabel(r'$\frac{g(x_i)-z_i}{z_i}$', fontsize=15)
 ax2.set_title(r'resolution, $RMS={:3.2f}$'.format(np.std(dd)))
 
 plt.tight_layout()
-plt.show()
+# plt.show()
+plt.savefig('illustration2d.png')
