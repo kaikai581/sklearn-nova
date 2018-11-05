@@ -5,12 +5,19 @@ from __future__ import print_function
 from skkda.base import KernelDiscriminantAnalysis
 from sklearn.preprocessing import StandardScaler
 
+import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
 import re
 import wget
+
+# command line argument
+parser = argparse.ArgumentParser(description='Command line argument parser for this script.')
+parser.add_argument('-n', '--nsamples', type=int, default=10000, help='Number of training samples.')
+args = parser.parse_args()
+nsamples = args.nsamples
 
 # define dataframe's column names
 col_names = ['run','subrun','cycle','evt','subevt','hade','hadnhit','cosnumi',
@@ -31,11 +38,10 @@ df = df[(df['truepdg'] != -5) & (df['cce'] < 15) & (df['bpfbestmuonchi2t'] < 20)
 df['hadnhit'] = pd.to_numeric(df['hadnhit'], errors='coerce')
 df['nmichels'] = pd.to_numeric(df['nmichels'], errors='coerce')
 # after all the cuts, use reset_index to rebuild the row index
-df_train = df.reset_index(drop=True).head(10000)
-# df_train = df.reset_index(drop=True)
+df_train = df.reset_index(drop=True).head(nsamples)
 
 # features included
-fnames = ['hade','hadnhit','cosnumi', 'cce','mue','nmichels','numuhadefrac','recow','bpfbestmuondedxll', 'bpfbestmuonchi2t']
+fnames = ['hade','hadnhit','cosnumi', 'cce','mue','nmichels','numuhadefrac','recow','bpfbestmuondedxll','bpfbestmuonchi2t']
 
 # save features as a numpy array
 X = df_train.loc[:, fnames].values
@@ -49,7 +55,7 @@ for i in range(len(y)):
 X = StandardScaler().fit_transform(X)
 
 # linear discriminative analysis
-kda = KernelDiscriminantAnalysis()
+kda = KernelDiscriminantAnalysis(gamma=1)
 X_r = kda.fit(X, yenc).transform(X)
 # kda.fit(X, yenc)
 # X_r = kda.transform(df.loc[:, fnames].values)
@@ -57,8 +63,15 @@ print(X_r[:,1][yenc == 0], len(X_r[:,1][yenc == 0]))
 print(X_r[:,1][yenc == 1], len(X_r[:,1][yenc == 1]))
 print(X_r)
 
-h, bins, p = plt.hist(X_r[yenc == 0][:,0], color='navy', alpha=.6, lw=2, label=r'$\bar{\nu}_\mu$', bins=100, histtype='step')
-plt.hist(X_r[yenc == 1][:,0], color='turquoise', alpha=.99, lw=2, label=r'$\nu_\mu$', bins=bins)
-plt.hist(X_r[:,0], color='red', alpha=.8, lw=2, label='total', bins=bins, histtype='step')
-plt.legend()
-plt.show()
+outfn = ['first_var.pdf', 'second_var.pdf']
+for i in [0, 1]:
+    x_min = np.amin(X_r[:,i])
+    x_max = np.amax(X_r[:,i])
+    bins = np.linspace(x_min, x_max, num=100)
+
+    plt.figure(i)
+    h, bins2, p = plt.hist(X_r[yenc == 0][:,i], color='navy', alpha=.6, lw=2, label=r'$\bar{\nu}_\mu$', bins=bins, histtype='step')
+    plt.hist(X_r[yenc == 1][:,i], color='turquoise', alpha=.5, lw=2, label=r'$\nu_\mu$', bins=bins)
+    plt.hist(X_r[:,i], color='red', alpha=.8, lw=2, label='total', bins=bins, histtype='step')
+    plt.legend()
+    plt.savefig(outfn[i])
