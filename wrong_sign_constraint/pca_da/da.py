@@ -6,6 +6,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import StandardScaler
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 # load data and do some basic cut
@@ -35,11 +36,18 @@ X_r = lda.fit(X, y).transform(X)
 plt.figure()
 colors = ['navy', 'turquoise']
 bins = None
-# for color, i, target_name in zip(colors, [-14, 14], [r'$\bar{\nu}_mu',r'\nu_\mu']]):
+
 h, bins, p = plt.hist(X_r[y == -14], color='navy', alpha=.6, lw=2, label=r'$\bar{\nu}_\mu$', bins=100, histtype='step')
 plt.hist(X_r[y == 14], color='turquoise', alpha=.99, lw=2, label=r'$\nu_\mu$', bins=bins)
 plt.hist(X_r, color='red', alpha=.8, lw=2, label='total', bins=bins, histtype='step')
 plt.legend()
 plt.show()
 
-# print(finalDf.shape)
+# save discriminated values to file
+import csv
+with open('lda_value_target_flattened.csv', 'w') as f:
+    writer = csv.writer(f, delimiter=' ')
+    writer.writerows(zip(X_r.flatten(), y))
+with open('lda_value_target.csv', 'w') as f:
+    writer = csv.writer(f, delimiter=' ')
+    writer.writerows(zip(X_r, y))
