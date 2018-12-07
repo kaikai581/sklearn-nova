@@ -1,0 +1,3 @@
+It looks like the hyper parameter I chose (gamma = 1)
+happened to highly overfit the training data and does not generalize
+at all! Oops.
