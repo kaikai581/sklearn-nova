@@ -2,15 +2,43 @@
 
 from __future__ import print_function
 
+import argparse
 import matplotlib.pyplot as plt
+import numpy as np
 import os
+import pandas as pd
 import pickle
 
-# load histograms
-model_pn = 'models/ten_vars_depth_10_samme.pkl'
-model_name = os.path.splitext(os.path.basename(model_pn))[0]
-in_hist_pn = 'histograms/{}.pkl'.format(model_name)
-with open(in_hist_pn, 'rb') as f:
-    label_hist, mixture_hist = pickle.load(f)
+def kappa(x, xmin, xmax):
+    if x > xmin and x < xmax:
+        return 1./(xmax-xmin)
+    else:
+        return 0
 
-print(sum(label_hist[0])*(label_hist[1][1]-label_hist[1][0]))
+# load predictions
+prediction_in = 'bdt_scores.h5'
+y_fhc_test = pd.read_hdf(prediction_in, 'ten_vars_depth_10_samme/fhc_test_score')
+y_rhc_test = pd.read_hdf(prediction_in, 'ten_vars_depth_10_samme/rhc_test_score')
+pdg_fhc_test = pd.read_hdf(prediction_in, 'fhc_test_truepdg')
+pdg_rhc_test = pd.read_hdf(prediction_in, 'rhc_test_truepdg')
+# concatenate the tables
+fhc_test = pd.concat([y_fhc_test, pdg_fhc_test], axis=1)
+rhc_test = pd.concat([y_rhc_test, pdg_rhc_test], axis=1)
+
+# process command line arguments
+parser = argparse.ArgumentParser(description='Command line options.')
+parser.add_argument('-n', '--nevents', type=int, default=1000000)
+args = parser.parse_args()
+nevents = min(len(fhc_test), len(rhc_test), args.nevents)
+
+# select only specified number of events
+fhc_test = fhc_test.sample(nevents, random_state=1)
+rhc_test = rhc_test.sample(nevents, random_state=1)
+score_fhc = fhc_test['bdt_score']
+score_rhc = rhc_test['bdt_score']
+
+# make histograms
+bins = np.linspace(-1,1,101)
+h_score_fhc = plt.hist(score_fhc.values, bins=bins, density=True, histtype='step')
+h_score_rhc = plt.hist(score_rhc.values, bins=bins, density=True, histtype='step')
+plt.show()

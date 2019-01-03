@@ -47,14 +47,18 @@ mixture_hist = plt.hist(y_rhc_test.head(1000000).values,
 
 # save the density decision functions
 model_name = os.path.splitext(os.path.basename(model_pn))[0]
-output_pn = 'histograms/{}.pkl'.format(model_name)
-os.system('mkdir -p histograms')
+directory = 'histograms'
+output_pn = '{}/{}.pkl'.format(directory, model_name)
+if not os.path.exists(directory):
+    os.makedirs(directory)
 with open(output_pn, 'wb') as f:  # Python 3: open(..., 'wb')
     pickle.dump([label_hist, mixture_hist], f)
 
 # save the predicted scores
 outfn = 'bdt_scores.h5'
 y_fhc_test.to_hdf(outfn, '{}/fhc_test_score'.format(model_name), complevel=9, complib='bzip2')
+df_fhc_test['truepdg'].to_hdf(outfn, 'fhc_test_truepdg', complevel=9, complib='bzip2')
 y_rhc_test.to_hdf(outfn, '{}/rhc_test_score'.format(model_name), complevel=9, complib='bzip2')
+df_rhc_test['truepdg'].to_hdf(outfn, 'rhc_test_truepdg', complevel=9, complib='bzip2')
 
 # plt.show()
