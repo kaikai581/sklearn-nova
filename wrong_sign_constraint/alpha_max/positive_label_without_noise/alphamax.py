@@ -88,39 +88,44 @@ def vbeta_optimization():
     # vbeta_init = np.full(len(h_score_fhc[0]), )
     return
 
-# load predictions
-prediction_in = 'bdt_scores.h5'
-y_fhc_test = pd.read_hdf(prediction_in, 'ten_vars_depth_10_samme/fhc_test_score')
-y_rhc_test = pd.read_hdf(prediction_in, 'ten_vars_depth_10_samme/rhc_test_score')
-pdg_fhc_test = pd.read_hdf(prediction_in, 'fhc_test_truepdg')
-pdg_rhc_test = pd.read_hdf(prediction_in, 'rhc_test_truepdg')
-# concatenate the tables
-fhc_test = pd.concat([y_fhc_test, pdg_fhc_test], axis=1)
-rhc_test = pd.concat([y_rhc_test, pdg_rhc_test], axis=1)
 
-# process command line arguments
-parser = argparse.ArgumentParser(description='Command line options.')
-parser.add_argument('-n', '--nevents', type=int, default=1000000)
-args = parser.parse_args()
-nevents = min(len(fhc_test), len(rhc_test), args.nevents)
+# main script
+if __name__ == '__main__':
+    # load predictions
+    prediction_in = 'bdt_scores.h5'
+    y_fhc_test = pd.read_hdf(prediction_in, 'ten_vars_depth_10_samme/fhc_test_score')
+    y_rhc_test = pd.read_hdf(prediction_in, 'ten_vars_depth_10_samme/rhc_test_score')
+    pdg_fhc_test = pd.read_hdf(prediction_in, 'fhc_test_truepdg')
+    pdg_rhc_test = pd.read_hdf(prediction_in, 'rhc_test_truepdg')
+    # concatenate the tables
+    fhc_test = pd.concat([y_fhc_test, pdg_fhc_test], axis=1)
+    rhc_test = pd.concat([y_rhc_test, pdg_rhc_test], axis=1)
 
-# select only specified number of events
-fhc_test = fhc_test.sample(nevents, random_state=1)
-rhc_test = rhc_test.sample(nevents, random_state=1)
-score_fhc = fhc_test['bdt_score']
-score_rhc = rhc_test['bdt_score']
+    # process command line arguments
+    parser = argparse.ArgumentParser(description='Command line options.')
+    parser.add_argument('-n', '--nevents', type=int, default=1000000, description='Number of events used for producing histograms.')
+    parser.add_argument('-l', '--nlikelihood', type=int, default=10000, description='Number of events used for forming likelihood functions.')
+    args = parser.parse_args()
+    nevents = min(len(fhc_test), len(rhc_test), args.nevents)
+    nlikelihood = min(len(fhc_test), len(rhc_test), args.nevents)
 
-# make histograms
-bins = np.linspace(-1,1,101)
-h_score_fhc = plt.hist(score_fhc.values, bins=bins, density=True, histtype='step')
-h_score_rhc = plt.hist(score_rhc.values, bins=bins, density=True, histtype='step')
-# plt.show()
+    # select only specified number of events
+    fhc_test = fhc_test.sample(nevents, random_state=1)
+    rhc_test = rhc_test.sample(nevents, random_state=1)
+    score_fhc = fhc_test['bdt_score']
+    score_rhc = rhc_test['bdt_score']
 
-# test the code
-vbeta = np.full(len(h_score_fhc[0]), .85)
-vbeta[len(vbeta)//2:] = .05
-print(vbeta)
-print(L(vbeta))
+    # make histograms
+    bins = np.linspace(-1,1,101)
+    h_score_fhc = plt.hist(score_fhc.values, bins=bins, density=True, histtype='step')
+    h_score_rhc = plt.hist(score_rhc.values, bins=bins, density=True, histtype='step')
+    # plt.show()
 
-# try out scipy optimization
-vbeta_optimization()
+    # test the code
+    vbeta = np.full(len(h_score_fhc[0]), .85)
+    vbeta[len(vbeta)//2:] = .05
+    print(vbeta)
+    print(L(vbeta))
+
+    # try out scipy optimization
+    vbeta_optimization()
