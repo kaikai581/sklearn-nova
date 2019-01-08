@@ -10,6 +10,7 @@ import numpy as np
 import os
 import pandas as pd
 import pickle
+import scipy
 
 def kappa(x, xmin, xmax):
     if x > xmin and x < xmax:
@@ -17,13 +18,9 @@ def kappa(x, xmin, xmax):
     return 0
 
 def f1(x):
-    vomega = h_score_fhc[0]
-    bin_bounds = h_score_fhc[1]
-    bin_size = bin_bounds[1] - bin_bounds[0]
-    vomega = [x*bin_size for x in vomega]
     result = 0
     bin_bounds_idx = 0
-    for omega in vomega:
+    for omega in vomega_fhc:
         xmin = bin_bounds[bin_bounds_idx]
         xmax = bin_bounds[bin_bounds_idx+1]
         bin_bounds_idx += 1
@@ -31,14 +28,10 @@ def f1(x):
     return result
 
 def h1(x, vbeta):
-    vomega = h_score_rhc[0]
-    bin_bounds = h_score_rhc[1]
-    bin_size = bin_bounds[1] - bin_bounds[0]
-    vomega = [x*bin_size for x in vomega]
     numerator = 0
     denominator = 0
     bin_bounds_idx = 0
-    for beta, omega in zip(vbeta, vomega):
+    for beta, omega in zip(vbeta, vomega_rhc):
         xmin = bin_bounds[bin_bounds_idx]
         xmax = bin_bounds[bin_bounds_idx+1]
         bin_bounds_idx += 1
@@ -47,14 +40,10 @@ def h1(x, vbeta):
     return numerator/denominator
 
 def h(x, vbeta):
-    vomega = h_score_rhc[0]
-    bin_bounds = h_score_rhc[1]
-    bin_size = bin_bounds[1] - bin_bounds[0]
-    vomega = [x*bin_size for x in vomega]
     alpha = 0
     numerator_h0 = 0
     bin_bounds_idx = 0
-    for beta, omega in zip(vbeta, vomega):
+    for beta, omega in zip(vbeta, vomega_rhc):
         xmin = bin_bounds[bin_bounds_idx]
         xmax = bin_bounds[bin_bounds_idx+1]
         bin_bounds_idx += 1
@@ -67,8 +56,8 @@ def L(vbeta):
     result2 = 0
     n1_used = 0
     n_used = 0
-    score_fhc_short = score_fhc.sample(10000, random_state=0)
-    score_rhc_short = score_rhc.sample(10000, random_state=0)
+    score_fhc_short = score_fhc.sample(nlikelihood, random_state=0)
+    score_rhc_short = score_rhc.sample(nlikelihood, random_state=0)
     for i in range(len(score_fhc_short)):
         x = score_fhc.iloc[i]
         h1_val = h1(x, vbeta)
@@ -85,9 +74,27 @@ def L(vbeta):
     return -result1-result2
 
 def vbeta_optimization():
-    # vbeta_init = np.full(len(h_score_fhc[0]), )
+    c = 0.5
+    nbeta = len(h_score_fhc[0])
+    vbeta_init = np.full(nbeta, c/nbeta)
+    # define equality constraint
+    eq_cons = dict()
+    eq_cons['type'] = 'eq'
+    eq_cons['fun'] = lambda x: level_surface_fun(x, c)
+    eq_cons['jac'] = level_surface_jac
+    res = minimize(L, vbeta_init, method='SLSQP', constraints=[eq_cons], bounds=vbeta_bounds)
+    print(res.x)
     return
 
+def level_surface_fun(vbeta, c):
+    result = 0
+    for i in range(len(vomega_rhc)):
+        result += vbeta[i] * vomega_rhc[i]
+    result -= c
+    return np.array([result])
+
+def level_surface_jac(vbeta):
+    return np.array(vomega_rhc)
 
 # main script
 if __name__ == '__main__':
@@ -103,13 +110,13 @@ if __name__ == '__main__':
 
     # process command line arguments
     parser = argparse.ArgumentParser(description='Command line options.')
-    parser.add_argument('-n', '--nevents', type=int, default=1000000, description='Number of events used for producing histograms.')
-    parser.add_argument('-l', '--nlikelihood', type=int, default=10000, description='Number of events used for forming likelihood functions.')
+    parser.add_argument('-n', '--nevents', type=int, default=1000000, help='Number of events used for producing histograms.')
+    parser.add_argument('-l', '--nlikelihood', type=int, default=10000, help='Number of events used for forming likelihood functions.')
     args = parser.parse_args()
     nevents = min(len(fhc_test), len(rhc_test), args.nevents)
-    nlikelihood = min(len(fhc_test), len(rhc_test), args.nevents)
+    nlikelihood = min(nevents, args.nlikelihood)
 
-    # select only specified number of events
+    # select only specified number of events to make histograms
     fhc_test = fhc_test.sample(nevents, random_state=1)
     rhc_test = rhc_test.sample(nevents, random_state=1)
     score_fhc = fhc_test['bdt_score']
@@ -121,11 +128,24 @@ if __name__ == '__main__':
     h_score_rhc = plt.hist(score_rhc.values, bins=bins, density=True, histtype='step')
     # plt.show()
 
+    # define some variables for convenience
+    # normalize omega vector so that they sum up to 1
+    vomega_fhc = h_score_fhc[0]
+    vomega_rhc = h_score_rhc[0]
+    bin_bounds = h_score_rhc[1]
+    bin_size = bin_bounds[1] - bin_bounds[0]
+    vomega_fhc = [x*bin_size for x in vomega_fhc]
+    vomega_rhc = [x*bin_size for x in vomega_rhc]
+    vbeta_bounds = scipy.optimize.Bounds(np.zeros(len(vomega_fhc)), np.ones(len(vomega_fhc)), keep_feasible=True)
+
     # test the code
-    vbeta = np.full(len(h_score_fhc[0]), .85)
-    vbeta[len(vbeta)//2:] = .05
-    print(vbeta)
-    print(L(vbeta))
+    # vbeta = np.full(len(h_score_fhc[0]), .85)
+    # vbeta[len(vbeta)//3:] = .05
+    # print(vbeta)
+    # print(L(vbeta))
+    # print(level_surface_fun(vbeta, .5))
+    # print(level_surface_jac(vbeta))
+    # print(scipy.optimize.check_grad(lambda x: level_surface_fun(x, 0.3), level_surface_jac, vbeta))
 
     # try out scipy optimization
     vbeta_optimization()
